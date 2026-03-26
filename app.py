@@ -1,7 +1,8 @@
 """Watch or Skip? — Should Matt watch the game he missed?"""
 
 import streamlit as st
-from datetime import datetime, date, timedelta, timezone, tzinfo
+from datetime import datetime, date, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 st.set_page_config(
     page_title="Watch or Skip?",
@@ -264,12 +265,21 @@ def render_status_card(sport: str, game: dict):
         if time_str:
             try:
                 dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
-                est_start = dt.astimezone(EST)
-                label = f"Starts at {est_start.strftime('%I:%M %p EST')}"
-                # Estimated end time
+                et_start = dt.astimezone(EASTERN)
+                now_et = datetime.now(EASTERN)
                 duration = {"mlb": 3, "nhl": 2.5, "ncaa": 2}.get(sport, 2.5)
-                est_end = est_start + timedelta(hours=duration)
-                label += f" · Check back after ~{est_end.strftime('%I:%M %p')}"
+                et_end = et_start + timedelta(hours=duration)
+                start_str = _eastern_str(et_start)
+                end_str = _eastern_str(et_end)
+
+                if now_et < et_start:
+                    label = f"Starts at {start_str} · Check back after ~{end_str}"
+                elif now_et < et_end:
+                    icon = "⏳"
+                    label = f"Likely in progress · Check back after ~{end_str}"
+                else:
+                    icon = "🔄"
+                    label = f"Should be final soon · Click date to refresh"
             except (ValueError, TypeError):
                 pass
     elif status == "Postponed":
@@ -304,8 +314,7 @@ def render_upcoming_card(game: dict):
     if time_str:
         try:
             dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
-            est_dt = dt.astimezone(EST)
-            display_date = est_dt.strftime("%a %b %d · %I:%M %p EST")
+            display_date = dt.astimezone(EASTERN).strftime("%a %b %d · ") + _eastern_str(dt)
         except (ValueError, TypeError):
             display_date = time_str[:10] if len(time_str) >= 10 else time_str
 
@@ -326,19 +335,16 @@ def render_upcoming_card(game: dict):
     """, unsafe_allow_html=True)
 
 
-# ── EST timezone ─────────────────────────────────────────────────────────
+# ── Eastern time (auto-handles EST/EDT) ──────────────────────────────────
 
-EST = timezone(timedelta(hours=-5))
+EASTERN = ZoneInfo("America/New_York")
 
 
-def to_est(time_str: str) -> str:
-    """Convert a UTC ISO timestamp to EST display string."""
-    try:
-        dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
-        est_dt = dt.astimezone(EST)
-        return est_dt.strftime("%I:%M %p EST")
-    except (ValueError, TypeError):
-        return ""
+def _eastern_str(dt_aware) -> str:
+    """Format an aware datetime as '04:10 PM EDT' / '04:10 PM EST'."""
+    et = dt_aware.astimezone(EASTERN)
+    suffix = et.strftime("%Z")  # EDT or EST
+    return et.strftime(f"%I:%M %p {suffix}")
 
 
 # ── Calendar widget ──────────────────────────────────────────────────────
@@ -348,7 +354,7 @@ import calendar
 def render_calendar():
     """Render an always-visible month calendar with clickable day buttons."""
     if "selected_date" not in st.session_state:
-        st.session_state.selected_date = date.today() - timedelta(days=1)
+        st.session_state.selected_date = date.today()
     if "cal_year" not in st.session_state:
         st.session_state.cal_year = st.session_state.selected_date.year
     if "cal_month" not in st.session_state:
