@@ -84,11 +84,6 @@ st.markdown("""
         font-size: 1.05rem;
     }
 
-    /* ── Force date picker row to stay inline ────────── */
-    [data-testid="stHorizontalBlock"] {
-        flex-wrap: nowrap !important;
-    }
-
     /* ── Mobile overrides ────────────────────────────── */
     @media (max-width: 640px) {
         .stMainBlockContainer {
@@ -406,15 +401,14 @@ def render_date_picker():
     if "selected_date" not in st.session_state:
         st.session_state.selected_date = date.today()
 
-    # Row 1: ◀  date input  ▶  🔄  — use small fixed-width columns
-    c1, c2, c3, c4 = st.columns([1, 4, 1, 1], gap="small")
+    col_prev, col_date, col_next = st.columns([1, 3, 1])
 
-    with c1:
-        if st.button("◀", key="prev_day", use_container_width=True):
+    with col_prev:
+        if st.button("◀ Prev", key="prev_day", use_container_width=True):
             st.session_state.selected_date -= timedelta(days=1)
             st.rerun()
 
-    with c2:
+    with col_date:
         picked = st.date_input(
             "date_picker",
             value=st.session_state.selected_date,
@@ -424,16 +418,9 @@ def render_date_picker():
             st.session_state.selected_date = picked
             st.rerun()
 
-    with c3:
-        if st.button("▶", key="next_day", use_container_width=True):
+    with col_next:
+        if st.button("Next ▶", key="next_day", use_container_width=True):
             st.session_state.selected_date += timedelta(days=1)
-            st.rerun()
-
-    with c4:
-        if st.button("🔄", key="refresh", use_container_width=True, help="Refresh"):
-            fetch_mlb.clear()
-            fetch_nhl.clear()
-            fetch_ncaa.clear()
             st.rerun()
 
     return st.session_state.selected_date
@@ -446,6 +433,11 @@ st.caption("Matt Gaines' Decision Maker")
 
 check_date = render_date_picker()
 st.markdown(f"**{check_date.strftime('%A, %B %d, %Y')}**")
+if st.button("🔄 Refresh", key="refresh", help="Refresh game data"):
+    fetch_mlb.clear()
+    fetch_nhl.clear()
+    fetch_ncaa.clear()
+    st.rerun()
 date_str = check_date.strftime("%Y-%m-%d")
 
 # ── Lock & load: show a full-width status bar while fetching ─────────
