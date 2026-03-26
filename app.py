@@ -13,38 +13,39 @@ st.set_page_config(
 # ── Custom CSS ──────────────────────────────────────────────────────────
 st.markdown("""
 <style>
+    /* ── Cards ──────────────────────────────────────────── */
     .verdict-yes {
         background: linear-gradient(135deg, #1a5c1a, #2d8a2d);
         border-radius: 12px;
-        padding: 1.5rem;
+        padding: 1.25rem;
         margin: 0.75rem 0;
         border-left: 5px solid #4CAF50;
     }
     .verdict-no {
         background: linear-gradient(135deg, #5c1a1a, #8a2d2d);
         border-radius: 12px;
-        padding: 1.5rem;
+        padding: 1.25rem;
         margin: 0.75rem 0;
         border-left: 5px solid #f44336;
     }
     .verdict-home {
         background: linear-gradient(135deg, #1a3d5c, #2d5a8a);
         border-radius: 12px;
-        padding: 1.5rem;
+        padding: 1.25rem;
         margin: 0.75rem 0;
         border-left: 5px solid #2196F3;
     }
     .verdict-upcoming {
         background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
         border-radius: 12px;
-        padding: 1.5rem;
+        padding: 1.25rem;
         margin: 0.75rem 0;
         border-left: 5px solid #888;
     }
     .verdict-warn {
         background: linear-gradient(135deg, #5c4a1a, #8a6d2d);
         border-radius: 12px;
-        padding: 1.5rem;
+        padding: 1.25rem;
         margin: 0.75rem 0;
         border-left: 5px solid #ff9800;
     }
@@ -54,19 +55,25 @@ st.markdown("""
         margin-bottom: 0.25rem;
     }
     .reason-text {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         font-weight: 600;
         opacity: 0.95;
     }
     .score-text {
-        font-size: 1rem;
+        font-size: 0.95rem;
         opacity: 0.8;
         margin-top: 0.25rem;
     }
     .card-header {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
+        line-height: 1.4;
+    }
+    .card-header img {
+        height: 32px;
+        vertical-align: middle;
+        margin-right: 6px;
     }
     .summary-banner {
         text-align: center;
@@ -74,7 +81,69 @@ st.markdown("""
         border-radius: 8px;
         background: #1a1a2e;
         margin-bottom: 1rem;
-        font-size: 1.1rem;
+        font-size: 1.05rem;
+    }
+
+    /* ── Calendar buttons: tighter on mobile ─────────── */
+    [data-testid="stHorizontalBlock"] button {
+        min-height: 2.2rem !important;
+        padding: 0.25rem 0 !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* ── Mobile overrides ────────────────────────────── */
+    @media (max-width: 640px) {
+        /* Tighter main container padding */
+        .stMainBlockContainer {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+
+        /* Smaller title */
+        h1 {
+            font-size: 1.5rem !important;
+        }
+
+        /* Cards: less padding, smaller text */
+        .verdict-yes, .verdict-no, .verdict-home,
+        .verdict-upcoming, .verdict-warn {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+        }
+        .big-verdict {
+            font-size: 1.5rem;
+        }
+        .card-header {
+            font-size: 0.95rem;
+            line-height: 1.3;
+        }
+        .card-header img {
+            height: 24px;
+            margin-right: 4px;
+        }
+        .reason-text {
+            font-size: 0.9rem;
+        }
+        .score-text {
+            font-size: 0.85rem;
+        }
+        .summary-banner {
+            font-size: 0.9rem;
+            padding: 0.5rem;
+        }
+
+        /* Calendar day buttons: compact */
+        [data-testid="stHorizontalBlock"] button {
+            min-height: 2rem !important;
+            padding: 0.15rem 0 !important;
+            font-size: 0.8rem !important;
+        }
+
+        /* Reduce column gaps */
+        [data-testid="stHorizontalBlock"] {
+            gap: 0.25rem !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -155,7 +224,7 @@ def _logo_img(sport: str) -> str:
     """Return an inline HTML img tag for the sport's team logo."""
     url = SPORT_LOGO.get(sport, "")
     if url:
-        return f'<img src="{url}" style="height:40px;vertical-align:middle;margin-right:8px;">'
+        return f'<img src="{url}">'
     return SPORT_EMOJI.get(sport, "🏅") + " "
 
 SPORT_TEAM = {
@@ -390,7 +459,7 @@ def render_calendar():
 
     # Day-of-week headers
     day_cols = st.columns(7)
-    for i, name in enumerate(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]):
+    for i, name in enumerate(["M", "T", "W", "T", "F", "S", "S"]):
         day_cols[i].markdown(
             f"<div style='text-align:center;font-size:0.8rem;opacity:0.5;'>{name}</div>",
             unsafe_allow_html=True,
