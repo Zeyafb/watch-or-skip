@@ -5,7 +5,7 @@ from datetime import datetime, date, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 st.set_page_config(
-    page_title="Watch or Skip?",
+    page_title="Watch or Skip? — Matt Gaines' Decision Maker",
     page_icon="🎮",
     layout="centered",
 )
@@ -429,6 +429,7 @@ def render_date_picker():
 # ── Main App ────────────────────────────────────────────────────────────
 
 st.title("Watch or Skip?")
+st.caption("Matt Gaines' Decision Maker")
 
 check_date = render_date_picker()
 
