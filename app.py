@@ -349,18 +349,14 @@ def render_calendar():
         st.session_state.cal_year = st.session_state.selected_date.year
     if "cal_month" not in st.session_state:
         st.session_state.cal_month = st.session_state.selected_date.month
-    if "loading" not in st.session_state:
-        st.session_state.loading = False
-
     yr = st.session_state.cal_year
     mo = st.session_state.cal_month
     sel = st.session_state.selected_date
-    locked = st.session_state.loading
 
     # Month nav row
     nav_cols = st.columns([1, 4, 1])
     with nav_cols[0]:
-        if st.button("◀", key="prev_month", use_container_width=True, disabled=locked):
+        if st.button("◀", key="prev_month", use_container_width=True):
             if mo == 1:
                 st.session_state.cal_year = yr - 1
                 st.session_state.cal_month = 12
@@ -374,7 +370,7 @@ def render_calendar():
             unsafe_allow_html=True,
         )
     with nav_cols[2]:
-        if st.button("▶", key="next_month", use_container_width=True, disabled=locked):
+        if st.button("▶", key="next_month", use_container_width=True):
             if mo == 12:
                 st.session_state.cal_year = yr + 1
                 st.session_state.cal_month = 1
@@ -422,7 +418,6 @@ def render_calendar():
                         disabled=locked,
                     ):
                         st.session_state.selected_date = d
-                        st.session_state.loading = True
                         st.rerun()
 
     return st.session_state.selected_date
@@ -450,7 +445,6 @@ mlb_games, mlb_err = fetch_mlb(date_str)
 nhl_games, nhl_err = fetch_nhl(date_str)
 ncaa_games, ncaa_err = fetch_ncaa(date_str)
 
-st.session_state.loading = False
 loading_placeholder.empty()
 
 # ── Build cards ──────────────────────────────────────────────────────────
