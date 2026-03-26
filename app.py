@@ -415,7 +415,6 @@ def render_calendar():
                         key=f"day_{yr}_{mo}_{day_num}",
                         use_container_width=True,
                         type=btn_type,
-                        disabled=locked,
                     ):
                         st.session_state.selected_date = d
                         st.rerun()
