@@ -320,7 +320,7 @@ def render_status_card(sport: str, game: dict):
                 end_str = _eastern_str(et_end)
 
                 if now_et < et_start:
-                    label = f"Starts at {start_str} · Check back after ~{end_str}"
+                    label = f"Starts at {start_str}"
                 elif now_et < et_end:
                     icon = "⏳"
                     label = f"Started at {start_str} · Likely in progress · Check back after ~{end_str}"
