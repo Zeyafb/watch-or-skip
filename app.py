@@ -263,9 +263,13 @@ def render_status_card(sport: str, game: dict):
         time_str = game.get("start_time_utc", "")
         if time_str:
             try:
-                local_str = to_est(time_str)
-                if local_str:
-                    label = f"Starts at {local_str}"
+                dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
+                est_start = dt.astimezone(EST)
+                label = f"Starts at {est_start.strftime('%I:%M %p EST')}"
+                # Estimated end time
+                duration = {"mlb": 3, "nhl": 2.5, "ncaa": 2}.get(sport, 2.5)
+                est_end = est_start + timedelta(hours=duration)
+                label += f" · Check back after ~{est_end.strftime('%I:%M %p')}"
             except (ValueError, TypeError):
                 pass
     elif status == "Postponed":
