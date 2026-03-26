@@ -326,7 +326,7 @@ def render_status_card(sport: str, game: dict):
                     label = f"Started at {start_str} · Likely in progress · Check back after ~{end_str}"
                 else:
                     icon = "🔄"
-                    label = f"Started at {start_str} · Should be final soon · Click date to refresh"
+                    label = f"Started at {start_str} · Should be final soon · Hit 🔄 to refresh"
             except (ValueError, TypeError):
                 pass
     elif status == "Postponed":
@@ -432,8 +432,17 @@ st.title("Watch or Skip?")
 
 check_date = render_date_picker()
 
+col_date_label, col_refresh = st.columns([4, 1])
+with col_date_label:
+    st.markdown(f"**{check_date.strftime('%A, %B %d, %Y')}**")
+with col_refresh:
+    if st.button("🔄", key="refresh", use_container_width=True, help="Refresh game data"):
+        fetch_mlb.clear()
+        fetch_nhl.clear()
+        fetch_ncaa.clear()
+        st.rerun()
+
 date_str = check_date.strftime("%Y-%m-%d")
-st.markdown(f"**{check_date.strftime('%A, %B %d, %Y')}**")
 
 # ── Lock & load: show a full-width status bar while fetching ─────────
 
