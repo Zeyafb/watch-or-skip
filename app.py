@@ -79,7 +79,7 @@ st.markdown("""
         text-align: center;
         padding: 0.75rem;
         border-radius: 8px;
-        background: #1a1a2e;
+        background: #141830;
         margin-bottom: 1rem;
         font-size: 1.05rem;
     }
@@ -323,10 +323,10 @@ def render_status_card(sport: str, game: dict):
                     label = f"Starts at {start_str} · Check back after ~{end_str}"
                 elif now_et < et_end:
                     icon = "⏳"
-                    label = f"Likely in progress · Check back after ~{end_str}"
+                    label = f"Started at {start_str} · Likely in progress · Check back after ~{end_str}"
                 else:
                     icon = "🔄"
-                    label = f"Should be final soon · Click date to refresh"
+                    label = f"Started at {start_str} · Should be final soon · Click date to refresh"
             except (ValueError, TypeError):
                 pass
     elif status == "Postponed":
