@@ -1,0 +1,5 @@
+streamlit
+python-mlb-statsapi
+nhl-api-py
+cbbpy
+requests
