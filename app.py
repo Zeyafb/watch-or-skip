@@ -84,27 +84,17 @@ st.markdown("""
         font-size: 1.05rem;
     }
 
-    /* ── Calendar buttons: tighter on mobile ─────────── */
-    [data-testid="stHorizontalBlock"] button {
-        min-height: 2.2rem !important;
-        padding: 0.25rem 0 !important;
-        font-size: 0.85rem !important;
-    }
-
     /* ── Mobile overrides ────────────────────────────── */
     @media (max-width: 640px) {
-        /* Tighter main container padding */
         .stMainBlockContainer {
             padding-left: 0.5rem !important;
             padding-right: 0.5rem !important;
         }
-
-        /* Smaller title */
         h1 {
             font-size: 1.5rem !important;
         }
 
-        /* Cards: less padding, smaller text */
+        /* Cards */
         .verdict-yes, .verdict-no, .verdict-home,
         .verdict-upcoming, .verdict-warn {
             padding: 0.75rem;
@@ -112,37 +102,25 @@ st.markdown("""
             border-radius: 8px;
         }
         .big-verdict {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
         }
         .card-header {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             line-height: 1.3;
         }
         .card-header img {
-            height: 24px;
+            height: 22px;
             margin-right: 4px;
         }
         .reason-text {
-            font-size: 0.9rem;
-        }
-        .score-text {
             font-size: 0.85rem;
         }
+        .score-text {
+            font-size: 0.8rem;
+        }
         .summary-banner {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             padding: 0.5rem;
-        }
-
-        /* Calendar day buttons: compact */
-        [data-testid="stHorizontalBlock"] button {
-            min-height: 2rem !important;
-            padding: 0.15rem 0 !important;
-            font-size: 0.8rem !important;
-        }
-
-        /* Reduce column gaps */
-        [data-testid="stHorizontalBlock"] {
-            gap: 0.25rem !important;
         }
     }
 </style>
@@ -416,87 +394,34 @@ def _eastern_str(dt_aware) -> str:
     return et.strftime(f"%I:%M %p {suffix}")
 
 
-# ── Calendar widget ──────────────────────────────────────────────────────
+# ── Date picker ──────────────────────────────────────────────────────────
 
-import calendar
-
-def render_calendar():
-    """Render an always-visible month calendar with clickable day buttons."""
+def render_date_picker():
+    """Date picker with prev/next day buttons and a calendar input."""
     if "selected_date" not in st.session_state:
         st.session_state.selected_date = date.today()
-    if "cal_year" not in st.session_state:
-        st.session_state.cal_year = st.session_state.selected_date.year
-    if "cal_month" not in st.session_state:
-        st.session_state.cal_month = st.session_state.selected_date.month
-    yr = st.session_state.cal_year
-    mo = st.session_state.cal_month
-    sel = st.session_state.selected_date
 
-    # Month nav row
-    nav_cols = st.columns([1, 4, 1])
-    with nav_cols[0]:
-        if st.button("◀", key="prev_month", use_container_width=True):
-            if mo == 1:
-                st.session_state.cal_year = yr - 1
-                st.session_state.cal_month = 12
-            else:
-                st.session_state.cal_month = mo - 1
-            st.rerun()
-    with nav_cols[1]:
-        st.markdown(
-            f"<div style='text-align:center;font-size:1.2rem;font-weight:700;padding:0.3rem 0;'>"
-            f"{calendar.month_name[mo]} {yr}</div>",
-            unsafe_allow_html=True,
-        )
-    with nav_cols[2]:
-        if st.button("▶", key="next_month", use_container_width=True):
-            if mo == 12:
-                st.session_state.cal_year = yr + 1
-                st.session_state.cal_month = 1
-            else:
-                st.session_state.cal_month = mo + 1
+    col_prev, col_date, col_next = st.columns([1, 3, 1])
+
+    with col_prev:
+        if st.button("◀ Prev", key="prev_day", use_container_width=True):
+            st.session_state.selected_date -= timedelta(days=1)
             st.rerun()
 
-    # Day-of-week headers
-    day_cols = st.columns(7)
-    for i, name in enumerate(["M", "T", "W", "T", "F", "S", "S"]):
-        day_cols[i].markdown(
-            f"<div style='text-align:center;font-size:0.8rem;opacity:0.5;'>{name}</div>",
-            unsafe_allow_html=True,
+    with col_date:
+        picked = st.date_input(
+            "date_picker",
+            value=st.session_state.selected_date,
+            label_visibility="collapsed",
         )
+        if picked != st.session_state.selected_date:
+            st.session_state.selected_date = picked
+            st.rerun()
 
-    # Day grid
-    cal = calendar.Calendar(firstweekday=0)
-    weeks = cal.monthdayscalendar(yr, mo)
-    today = date.today()
-
-    for week in weeks:
-        cols = st.columns(7)
-        for i, day_num in enumerate(week):
-            with cols[i]:
-                if day_num == 0:
-                    st.write("")
-                else:
-                    d = date(yr, mo, day_num)
-                    is_selected = d == sel
-                    is_today = d == today
-
-                    if is_selected:
-                        label = f"**{day_num}**"
-                    elif is_today:
-                        label = f"_{day_num}_"
-                    else:
-                        label = str(day_num)
-
-                    btn_type = "primary" if is_selected else "secondary"
-                    if st.button(
-                        label,
-                        key=f"day_{yr}_{mo}_{day_num}",
-                        use_container_width=True,
-                        type=btn_type,
-                    ):
-                        st.session_state.selected_date = d
-                        st.rerun()
+    with col_next:
+        if st.button("Next ▶", key="next_day", use_container_width=True):
+            st.session_state.selected_date += timedelta(days=1)
+            st.rerun()
 
     return st.session_state.selected_date
 
@@ -505,7 +430,7 @@ def render_calendar():
 
 st.title("Watch or Skip?")
 
-check_date = render_calendar()
+check_date = render_date_picker()
 
 date_str = check_date.strftime("%Y-%m-%d")
 st.markdown(f"**{check_date.strftime('%A, %B %d, %Y')}**")
