@@ -314,7 +314,7 @@ def render_status_card(sport: str, game: dict):
                 dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
                 et_start = dt.astimezone(EASTERN)
                 now_et = datetime.now(EASTERN)
-                duration = {"mlb": 3, "nhl": 2.5, "ncaa": 2}.get(sport, 2.5)
+                duration = {"mlb": 3, "nhl": 3, "ncaa": 2}.get(sport, 2.5)
                 et_end = et_start + timedelta(hours=duration)
                 start_str = _eastern_str(et_start)
                 end_str = _eastern_str(et_end)
