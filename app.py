@@ -399,7 +399,7 @@ def _eastern_str(dt_aware) -> str:
 def render_date_picker():
     """Date picker: prev/next buttons with date input, all in one row."""
     if "selected_date" not in st.session_state:
-        st.session_state.selected_date = date.today()
+        st.session_state.selected_date = datetime.now(EASTERN).date()
 
     col_prev, col_date, col_next = st.columns([1, 3, 1])
 

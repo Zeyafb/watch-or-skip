@@ -27,17 +27,15 @@ def get_games_for_date(date_str: str) -> list[dict]:
                     "away_team": g.teams.away.team.name,
                 })
             else:
-                # Upcoming / in-progress / other
-                state_lower = state.lower()
-                if "progress" in state_lower or "scheduled" in state_lower or "pre-game" in state_lower or "warmup" in state_lower:
-                    games.append({
-                        "status": "Upcoming",
-                        "game_pk": g.game_pk,
-                        "home_team": g.teams.home.team.name,
-                        "away_team": g.teams.away.team.name,
-                        "red_sox_home": g.teams.home.team.id == RED_SOX_TEAM_ID,
-                        "start_time_utc": g.game_date if hasattr(g, "game_date") else "",
-                    })
+                # Upcoming / in-progress / game over / other
+                games.append({
+                    "status": "Upcoming",
+                    "game_pk": g.game_pk,
+                    "home_team": g.teams.home.team.name,
+                    "away_team": g.teams.away.team.name,
+                    "red_sox_home": g.teams.home.team.id == RED_SOX_TEAM_ID,
+                    "start_time_utc": g.game_date if hasattr(g, "game_date") else "",
+                })
     return games
 
 
