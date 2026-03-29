@@ -46,7 +46,8 @@ def get_games_for_date(date_str: str) -> list[dict]:
                 "home_team": home_name,
                 "away_team": away_name,
             })
-        elif state in ("FUT", "PRE"):
+        else:
+            # FUT, PRE, LIVE, CRIT, or any other state — show as upcoming
             games.append({
                 "status": "Upcoming",
                 "game_id": g.get("id"),
