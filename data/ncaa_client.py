@@ -52,49 +52,6 @@ def get_games_for_date(date_str: str) -> list[dict]:
     return games
 
 
-def get_upcoming_games(days: int = 7) -> list[dict]:
-    """Get upcoming GMU games from team schedule. Used for the schedule view."""
-    from datetime import datetime, timedelta
-
-    url = f"{ESPN_BASE}/teams/{GMU_TEAM_ID}/schedule"
-    # Determine current season (NCAA season spans two calendar years)
-    now = datetime.now()
-    season = now.year if now.month >= 9 else now.year
-    resp = requests.get(url, params={"season": season}, timeout=15)
-    resp.raise_for_status()
-    data = resp.json()
-
-    cutoff = now + timedelta(days=days)
-    upcoming = []
-    for event in data.get("events", []):
-        event_date_str = event.get("date", "")
-        try:
-            event_date = datetime.fromisoformat(event_date_str.replace("Z", "+00:00"))
-        except (ValueError, TypeError):
-            continue
-
-        # Convert to naive for comparison
-        event_naive = event_date.replace(tzinfo=None)
-        if event_naive < now or event_naive > cutoff:
-            continue
-
-        comp = event.get("competitions", [{}])[0]
-        competitors = comp.get("competitors", [])
-        status_name = comp.get("status", {}).get("type", {}).get("name", "")
-        gmu, opp = _split_teams(competitors)
-
-        upcoming.append({
-            "sport": "ncaa",
-            "date": event_date_str,
-            "home_team": _team_name(competitors, "home"),
-            "away_team": _team_name(competitors, "away"),
-            "gmu_home": gmu.get("homeAway") == "home" if gmu else False,
-            "status": status_name,
-        })
-
-    return upcoming
-
-
 def _build_game_data(comp: dict, event: dict) -> dict:
     """Build structured dict for a completed GMU game."""
     competitors = comp.get("competitors", [])

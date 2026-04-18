@@ -1,7 +1,7 @@
 """Watch or Skip? — Should Matt watch the game he missed?"""
 
 import streamlit as st
-from datetime import datetime, date, timedelta, timezone
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 st.set_page_config(
@@ -156,33 +156,6 @@ def fetch_ncaa(date_str: str):
         return [], str(e)
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
-def fetch_mlb_upcoming():
-    try:
-        from data.mlb_client import get_upcoming_games
-        return get_upcoming_games(days=7), None
-    except Exception as e:
-        return [], str(e)
-
-
-@st.cache_data(ttl=3600, show_spinner=False)
-def fetch_nhl_upcoming():
-    try:
-        from data.nhl_client import get_upcoming_games
-        return get_upcoming_games(days=7), None
-    except Exception as e:
-        return [], str(e)
-
-
-@st.cache_data(ttl=3600, show_spinner=False)
-def fetch_ncaa_upcoming():
-    try:
-        from data.ncaa_client import get_upcoming_games
-        return get_upcoming_games(days=7), None
-    except Exception as e:
-        return [], str(e)
-
-
 # ── Card rendering ──────────────────────────────────────────────────────
 
 SPORT_LOGO = {
@@ -298,7 +271,6 @@ def render_no_game_card(sport: str, message: str = "No game on this date"):
 def render_status_card(sport: str, game: dict):
     """Render a postponed/upcoming/etc card."""
     logo = _logo_img(sport)
-    team = SPORT_TEAM.get(sport, "")
     status = game.get("status", "Unknown")
     away = game.get("away_team", "?")
     home = game.get("home_team", "?")
@@ -342,41 +314,6 @@ def render_status_card(sport: str, game: dict):
     <div class="{css_class}">
         <div class="card-header">{logo}{matchup}</div>
         <div class="big-verdict">{icon}</div>
-        <div class="reason-text">{label}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-def render_upcoming_card(game: dict):
-    """Render a card for the schedule view."""
-    sport = game.get("sport", "")
-    logo = _logo_img(sport)
-    team = SPORT_TEAM.get(sport, "")
-    away = game.get("away_team", "?")
-    home = game.get("home_team", "?")
-    matchup = f"{away} @ {home}"
-
-    time_str = game.get("date", "")
-    display_date = ""
-    if time_str:
-        try:
-            dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
-            display_date = dt.astimezone(EASTERN).strftime("%a %b %d · ") + _eastern_str(dt)
-        except (ValueError, TypeError):
-            display_date = time_str[:10] if len(time_str) >= 10 else time_str
-
-    status = game.get("status", "")
-    if status in ("Final", "OFF"):
-        label = "Final"
-        css_class = "verdict-upcoming"
-    else:
-        label = "Upcoming"
-        css_class = "verdict-upcoming"
-
-    st.markdown(f"""
-    <div class="{css_class}">
-        <div class="card-header">{logo}{matchup}</div>
-        <div class="score-text">🕐 {display_date}</div>
         <div class="reason-text">{label}</div>
     </div>
     """, unsafe_allow_html=True)

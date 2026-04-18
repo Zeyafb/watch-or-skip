@@ -62,32 +62,6 @@ def get_games_for_date(date_str: str) -> list[dict]:
     return games
 
 
-def get_upcoming_games(days: int = 7) -> list[dict]:
-    """Get upcoming Capitals games for the next N days."""
-    from datetime import datetime, timedelta
-
-    upcoming = []
-    for offset in range(days + 1):
-        date = (datetime.now() + timedelta(days=offset)).strftime("%Y-%m-%d")
-        sched = client.schedule.daily_schedule(date=date)
-        if not sched or "games" not in sched:
-            continue
-        for g in sched["games"]:
-            away_abbrev = g["awayTeam"]["abbrev"]
-            home_abbrev = g["homeTeam"]["abbrev"]
-            if away_abbrev != CAPS_ABBREV and home_abbrev != CAPS_ABBREV:
-                continue
-            upcoming.append({
-                "sport": "nhl",
-                "date": g.get("startTimeUTC", date),
-                "home_team": _full_team_name(g["homeTeam"]),
-                "away_team": _full_team_name(g["awayTeam"]),
-                "caps_home": home_abbrev == CAPS_ABBREV,
-                "status": g.get("gameState", ""),
-            })
-    return upcoming
-
-
 def _build_game_data(game: dict) -> dict:
     """Build structured dict for a completed Caps game."""
     game_id = game["id"]

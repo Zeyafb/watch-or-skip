@@ -39,37 +39,12 @@ def get_games_for_date(date_str: str) -> list[dict]:
     return games
 
 
-def get_upcoming_games(days: int = 7) -> list[dict]:
-    """Get upcoming Red Sox games for the next N days."""
-    from datetime import datetime, timedelta
-
-    start = datetime.now().strftime("%Y-%m-%d")
-    end = (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d")
-    schedule = mlb.get_schedule(start_date=start, end_date=end, team_id=RED_SOX_TEAM_ID)
-    if schedule is None or not schedule.dates:
-        return []
-
-    upcoming = []
-    for d in schedule.dates:
-        for g in d.games:
-            upcoming.append({
-                "sport": "mlb",
-                "date": g.game_date if hasattr(g, "game_date") else d.date,
-                "home_team": g.teams.home.team.name,
-                "away_team": g.teams.away.team.name,
-                "red_sox_home": g.teams.home.team.id == RED_SOX_TEAM_ID,
-                "status": g.status.detailed_state,
-            })
-    return upcoming
-
-
 def _build_game_data(game) -> dict:
     """Build the structured dict for a completed game."""
     game_pk = game.game_pk
     home_team = game.teams.home.team.name
     away_team = game.teams.away.team.name
     home_id = game.teams.home.team.id
-    away_id = game.teams.away.team.id
 
     red_sox_home = home_id == RED_SOX_TEAM_ID
 
