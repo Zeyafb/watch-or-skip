@@ -463,11 +463,12 @@ with results_container:
     st.markdown(f'<div class="summary-banner">{msg}</div>', unsafe_allow_html=True)
 
 # ── Render cards ──
+# Hide teams with no game — only show teams that have something to report
 for sport, game, verdict, reason in cards:
+    if game is None:
+        continue
     with results_container:
-        if game is None:
-            render_no_game_card(sport)
-        elif game.get("status") == "error":
+        if game.get("status") == "error":
             st.warning(f"{SPORT_EMOJI.get(sport, '')} {SPORT_TEAM.get(sport, '')} error: {game['msg']}")
         elif verdict is not None:
             render_verdict_card(sport, game, verdict, reason)
