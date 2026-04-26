@@ -1,7 +1,7 @@
 """Watch or Skip? — Should Matt watch the game he missed?"""
 
 import streamlit as st
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
 
 st.set_page_config(
