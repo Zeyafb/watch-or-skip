@@ -83,6 +83,20 @@ st.markdown("""
         margin-bottom: 1rem;
         font-size: 1.05rem;
     }
+    .highlights-link {
+        display: inline-block;
+        margin-top: 0.75rem;
+        padding: 0.5rem 0.9rem;
+        background: rgba(255, 0, 0, 0.85);
+        color: white !important;
+        text-decoration: none !important;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+    .highlights-link:hover {
+        background: rgba(255, 0, 0, 1);
+    }
 
     /* ── Mobile overrides ────────────────────────────── */
     @media (max-width: 640px) {
@@ -185,6 +199,23 @@ SPORT_TEAM = {
 }
 
 
+def _highlights_url(sport: str, game: dict, game_date: date) -> str:
+    """Build a YouTube search URL for the game's highlights."""
+    team = SPORT_TEAM.get(sport, "")
+    away = game.get("away_team", "")
+    home = game.get("home_team", "")
+    # Pick the opponent (not Matt's team)
+    if team and team.lower() in away.lower():
+        opp = home
+    elif team and team.lower() in home.lower():
+        opp = away
+    else:
+        opp = away or home
+    date_str = game_date.strftime("%B %d %Y")
+    query = f"{team} vs {opp} {date_str} highlights".replace(" ", "+")
+    return f"https://www.youtube.com/results?search_query={query}"
+
+
 def _build_score_str(sport: str, game: dict) -> str:
     """Build a final score string for display on NO cards only."""
     if sport == "mlb" and "final_score" in game:
@@ -213,7 +244,7 @@ def _build_score_str(sport: str, game: dict) -> str:
     return ""
 
 
-def render_verdict_card(sport: str, game: dict, verdict: str, reason: str):
+def render_verdict_card(sport: str, game: dict, verdict: str, reason: str, game_date: date | None = None):
     """Render a WATCH/SKIP/HOME verdict card."""
     logo = _logo_img(sport)
 
@@ -240,7 +271,7 @@ def render_verdict_card(sport: str, game: dict, verdict: str, reason: str):
         css_class = "verdict-warn"
 
     # WATCH: logo + matchup + badge only (zero spoilers)
-    # SKIP: badge + reason + final score
+    # SKIP: badge + reason + final score + highlights link
     # HOME: logo + matchup + badge only
     extra_lines = ""
     if verdict == "NO":
@@ -248,6 +279,12 @@ def render_verdict_card(sport: str, game: dict, verdict: str, reason: str):
         score_str = _build_score_str(sport, game)
         if score_str:
             extra_lines += f'\n        <div class="score-text">Final: {score_str}</div>'
+        if game_date:
+            yt_url = _highlights_url(sport, game, game_date)
+            extra_lines += (
+                f'\n        <a class="highlights-link" href="{yt_url}" '
+                f'target="_blank" rel="noopener">📺 Watch Highlights on YouTube</a>'
+            )
 
     st.markdown(f"""
     <div class="{css_class}">
@@ -471,6 +508,6 @@ for sport, game, verdict, reason in cards:
         if game.get("status") == "error":
             st.warning(f"{SPORT_EMOJI.get(sport, '')} {SPORT_TEAM.get(sport, '')} error: {game['msg']}")
         elif verdict is not None:
-            render_verdict_card(sport, game, verdict, reason)
+            render_verdict_card(sport, game, verdict, reason, check_date)
         else:
             render_status_card(sport, game)
