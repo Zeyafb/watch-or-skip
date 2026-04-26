@@ -271,20 +271,28 @@ def render_verdict_card(sport: str, game: dict, verdict: str, reason: str, game_
         css_class = "verdict-warn"
 
     # WATCH: logo + matchup + badge only (zero spoilers)
-    # SKIP: badge + reason + final score + highlights link
+    # SKIP: badge + reason + final score, then highlights below
     # HOME: logo + matchup + badge only
     extra_lines = ""
+    youtube_url = None
+    iframe_url = None
+    fallback_search_url = None
+
     if verdict == "NO":
         extra_lines = f'<div class="reason-text">{reason}</div>'
         score_str = _build_score_str(sport, game)
         if score_str:
             extra_lines += f'\n        <div class="score-text">Final: {score_str}</div>'
+
         if game_date:
-            yt_url = _highlights_url(sport, game, game_date)
-            extra_lines += (
-                f'\n        <a class="highlights-link" href="{yt_url}" '
-                f'target="_blank" rel="noopener">📺 Watch Highlights on YouTube</a>'
-            )
+            if sport == "mlb":
+                from data.youtube import find_red_sox_recap
+                youtube_url = find_red_sox_recap(game_date)
+            elif sport == "nhl":
+                from data.youtube import find_caps_recap_iframe
+                iframe_url = find_caps_recap_iframe(game_date)
+            # Always have a search-link fallback
+            fallback_search_url = _highlights_url(sport, game, game_date)
 
     st.markdown(f"""
     <div class="{css_class}">
@@ -293,6 +301,18 @@ def render_verdict_card(sport: str, game: dict, verdict: str, reason: str, game_
         {extra_lines}
     </div>
     """, unsafe_allow_html=True)
+
+    # Embed video or show search-link button below the card
+    if youtube_url:
+        st.video(youtube_url)
+    elif iframe_url:
+        st.components.v1.iframe(iframe_url, height=360)
+    elif fallback_search_url:
+        st.markdown(
+            f'<a class="highlights-link" href="{fallback_search_url}" '
+            f'target="_blank" rel="noopener">📺 Watch Highlights on YouTube</a>',
+            unsafe_allow_html=True,
+        )
 
 
 def render_no_game_card(sport: str, message: str = "No game on this date"):
