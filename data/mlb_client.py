@@ -1,8 +1,10 @@
 """MLB data client using python-mlb-statsapi. Fetches completed Red Sox games."""
 
+import requests
 from mlbstatsapi import Mlb
 
 RED_SOX_TEAM_ID = 111
+RAW_API_BASE = "https://statsapi.mlb.com/api/v1"
 
 mlb = Mlb()
 
@@ -64,8 +66,12 @@ def _build_game_data(game) -> dict:
     # Score entering bottom of 9th
     score_entering_bottom_9th = _get_score_entering_bottom_9th(ls, red_sox_home)
 
-    # Tying run at the plate in 9th or later
-    tying_run = _check_tying_run_at_plate(game_pk, red_sox_home)
+    # Tying run at the plate in 9th or later — never let a parse failure
+    # take down the whole game card
+    try:
+        tying_run = _check_tying_run_at_plate(game_pk, red_sox_home)
+    except Exception:
+        tying_run = False
 
     return {
         "status": "Final",
@@ -111,33 +117,37 @@ def _get_score_entering_bottom_9th(ls, red_sox_home: bool) -> dict:
 def _check_tying_run_at_plate(game_pk: int, red_sox_home: bool) -> bool:
     """Check if the tying run came to the plate for the Red Sox in the 9th+.
 
+    Uses the raw MLB Stats API to avoid pydantic validation failures in the
+    mlbstatsapi library (which rejects the entire response if any single
+    pitch event has unexpected fields, e.g. missing pitch type code).
+
     For each at-bat where Red Sox are batting in inning >= 9:
     - Count runners on base at the start of the at-bat
     - Max runs on a single hit = runners_on + 1 (batter)
     - Runs needed to tie = opponent_score - red_sox_score (at start of at-bat)
     - If runs_needed_to_tie <= runners_on + 1, the tying run is at the plate
     """
-    pbp = mlb.get_game_play_by_play(game_pk)
+    plays = _get_plays_raw(game_pk)
+    if plays is None:
+        return False
 
-    # Red Sox bat in "top" when away, "bottom" when home
     sox_batting_half = "bottom" if red_sox_home else "top"
-
     prev_away_score = 0
     prev_home_score = 0
 
-    for i, play in enumerate(pbp.all_plays):
+    for i, play in enumerate(plays):
         # Track score at start of this at-bat from previous play
         if i > 0:
-            prev_play = pbp.all_plays[i - 1]
-            prev_away_score = prev_play.result.away_score or 0
-            prev_home_score = prev_play.result.home_score or 0
+            prev_result = plays[i - 1].get("result", {})
+            prev_away_score = prev_result.get("awayScore", 0) or 0
+            prev_home_score = prev_result.get("homeScore", 0) or 0
 
-        if play.about.inning < 9:
+        about = play.get("about", {})
+        if about.get("inning", 0) < 9:
             continue
-        if play.about.half_inning != sox_batting_half:
+        if about.get("halfInning", "") != sox_batting_half:
             continue
 
-        # Score at start of this at-bat
         if red_sox_home:
             sox_score = prev_home_score
             opp_score = prev_away_score
@@ -147,19 +157,34 @@ def _check_tying_run_at_plate(game_pk: int, red_sox_home: bool) -> bool:
 
         deficit = opp_score - sox_score
         if deficit <= 0:
-            # Red Sox are tied or leading — tying run is moot, but the game
-            # is close enough that this counts
             return True
 
-        # Count runners on base
+        matchup = play.get("matchup", {})
         runners_on = sum([
-            1 if play.matchup.post_on_first else 0,
-            1 if play.matchup.post_on_second else 0,
-            1 if play.matchup.post_on_third else 0,
+            1 if matchup.get("postOnFirst") else 0,
+            1 if matchup.get("postOnSecond") else 0,
+            1 if matchup.get("postOnThird") else 0,
         ])
 
-        max_runs_on_hit = runners_on + 1  # all runners + batter
+        max_runs_on_hit = runners_on + 1
         if deficit <= max_runs_on_hit:
             return True
 
     return False
+
+
+def _get_plays_raw(game_pk: int) -> list | None:
+    """Fetch play-by-play via the raw MLB Stats API as a list of dicts.
+
+    Returns None if the request fails entirely. Returns [] if the response
+    is malformed but reachable.
+    """
+    try:
+        resp = requests.get(
+            f"{RAW_API_BASE}/game/{game_pk}/playByPlay",
+            timeout=15,
+        )
+        resp.raise_for_status()
+        return resp.json().get("allPlays", [])
+    except (requests.RequestException, ValueError):
+        return None
