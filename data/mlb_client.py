@@ -173,6 +173,56 @@ def _check_tying_run_at_plate(game_pk: int, red_sox_home: bool) -> bool:
     return False
 
 
+def get_condensed_game_url(game_pk: int) -> str | None:
+    """Find the 'Condensed Game' mp4 URL from the MLB content API.
+
+    Works for any MLB game, including losses (which the Red Sox YouTube
+    channel doesn't post full recaps for). Returns None if no condensed
+    game is available yet (highlights take a few hours to publish).
+    """
+    try:
+        resp = requests.get(
+            f"{RAW_API_BASE}/game/{game_pk}/content",
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except (requests.RequestException, ValueError):
+        return None
+
+    items = (
+        data.get("highlights", {})
+            .get("highlights", {})
+            .get("items", [])
+    )
+    # Prefer "Condensed Game" — best 5-7 min recap with full game flow
+    for clip in items:
+        if "condensed game" in clip.get("title", "").lower():
+            return _pick_mp4_url(clip)
+    # Fallback: any "recap"-titled clip
+    for clip in items:
+        if "recap" in clip.get("title", "").lower():
+            return _pick_mp4_url(clip)
+    return None
+
+
+def _pick_mp4_url(clip: dict) -> str | None:
+    """Pick the best-quality mp4 URL from a highlight clip."""
+    import re
+    playbacks = clip.get("playbacks", [])
+    candidates = [p for p in playbacks if p.get("name", "").startswith("mp4Avc")]
+    if not candidates:
+        candidates = [p for p in playbacks if "mp4" in p.get("url", "").lower()]
+    if not candidates:
+        return None
+    # Pick highest bitrate — name like "mp4Avc1800K_640X360"
+    candidates.sort(
+        key=lambda p: int((re.search(r"(\d+)K", p.get("name", "")) or [None, "0"])[1]),
+        reverse=True,
+    )
+    return candidates[0].get("url")
+
+
 def _get_plays_raw(game_pk: int) -> list | None:
     """Fetch play-by-play via the raw MLB Stats API as a list of dicts.
 

@@ -274,7 +274,7 @@ def render_verdict_card(sport: str, game: dict, verdict: str, reason: str, game_
     # SKIP: badge + reason + final score, then highlights below
     # HOME: logo + matchup + badge only
     extra_lines = ""
-    youtube_url = None
+    mp4_url = None
     iframe_url = None
     fallback_search_url = None
 
@@ -286,12 +286,13 @@ def render_verdict_card(sport: str, game: dict, verdict: str, reason: str, game_
 
         if game_date:
             if sport == "mlb":
-                from data.youtube import find_red_sox_recap
-                youtube_url = find_red_sox_recap(game_date)
+                from data.mlb_client import get_condensed_game_url
+                game_pk = game.get("game_pk")
+                if game_pk:
+                    mp4_url = get_condensed_game_url(game_pk)
             elif sport == "nhl":
                 from data.youtube import find_caps_recap_iframe
                 iframe_url = find_caps_recap_iframe(game_date)
-            # Always have a search-link fallback
             fallback_search_url = _highlights_url(sport, game, game_date)
 
     st.markdown(f"""
@@ -303,8 +304,8 @@ def render_verdict_card(sport: str, game: dict, verdict: str, reason: str, game_
     """, unsafe_allow_html=True)
 
     # Embed video or show search-link button below the card
-    if youtube_url:
-        st.video(youtube_url)
+    if mp4_url:
+        st.video(mp4_url)
     elif iframe_url:
         st.components.v1.iframe(iframe_url, height=360)
     elif fallback_search_url:
